@@ -1,0 +1,8 @@
+{
+  "name": "Pāḷi Nirutti - Phân Tích & Biến Cách Ngôn Ngữ Pāḷi",
+  "description": "Chuyên gia phân tích ngữ pháp ngôn ngữ cổ Pāḷi: bóc tách ngữ căn, từ loại, hình thái hiện tại, dịch nghĩa chuẩn xác và bảng chia biến cách chi tiết.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
