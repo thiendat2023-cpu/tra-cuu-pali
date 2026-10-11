@@ -19,6 +19,7 @@ import {
   FileText,
   Flame,
   Heart,
+  Info,
 } from 'lucide-react';
 import {
   ActiveTab,
@@ -34,7 +35,8 @@ import { SentencePaliToViResultView } from './components/SentencePaliToViResult.
 import { SentenceViToPaliResultView } from './components/SentenceViToPaliResult.tsx';
 import { GrammarHandbookView } from './components/GrammarHandbookView.tsx';
 import { HistoryDrawer } from './components/HistoryDrawer.tsx';
-import { AuthorModal } from './components/AuthorModal.tsx';
+import { SupportModal } from './components/SupportModal.tsx';
+import { InfoModal } from './components/InfoModal.tsx';
 
 const STORAGE_KEY = 'pali_nirutti_history_v2';
 const MAX_HISTORY_ITEMS = 10;
@@ -121,7 +123,8 @@ export default function App() {
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
-  const [isAuthorModalOpen, setIsAuthorModalOpen] = useState(false);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
@@ -293,15 +296,27 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Nút [Ủng hộ] */}
             <button
-              onClick={() => setIsAuthorModalOpen(true)}
+              onClick={() => setIsSupportModalOpen(true)}
               className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-amber-200 border border-stone-800 text-xs sm:text-sm font-medium transition-colors"
-              title="Tác giả & Ủng hộ"
+              title="Ủng hộ dự án (QR Ngân hàng)"
             >
               <Heart className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
-              <span className="hidden sm:inline">Ủng hộ</span>
+              <span>Ủng hộ</span>
             </button>
 
+            {/* Nút [Thông Tin] */}
+            <button
+              onClick={() => setIsInfoModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-amber-200 border border-stone-800 text-xs sm:text-sm font-medium transition-colors"
+              title="Thông tin tác giả"
+            >
+              <Info className="w-3.5 h-3.5 text-amber-400" />
+              <span>Thông Tin</span>
+            </button>
+
+            {/* Nút [Lịch sử] */}
             <button
               onClick={() => setIsHistoryDrawerOpen(true)}
               className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-amber-200 border border-stone-800 text-xs sm:text-sm font-medium transition-colors"
@@ -542,9 +557,9 @@ export default function App() {
           <p className="text-xs sm:text-sm text-stone-300 font-sans flex items-center justify-center gap-1.5 flex-wrap">
             <span>Tuỳ hỷ ủng hộ bấm vào đây --&gt;</span>
             <button
-              onClick={() => setIsAuthorModalOpen(true)}
+              onClick={() => setIsSupportModalOpen(true)}
               className="text-amber-400 font-bold font-pali hover:underline hover:text-amber-300 cursor-pointer transition-all inline-flex items-center gap-1 focus:outline-none"
-              title="Mở mã QR ủng hộ tác giả"
+              title="Mở mã QR ngân hàng ủng hộ tác giả"
             >
               <span>Thầy Đạt cute ^v^</span>
             </button>
@@ -552,10 +567,16 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Author & Donation Modal */}
-      <AuthorModal
-        isOpen={isAuthorModalOpen}
-        onClose={() => setIsAuthorModalOpen(false)}
+      {/* Support Modal (QR Ngân Hàng - id="support-modal") */}
+      <SupportModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+      />
+
+      {/* Info Modal (Hình Của Thầy & Zalo - id="info-modal") */}
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
       />
 
       {/* History Drawer */}
