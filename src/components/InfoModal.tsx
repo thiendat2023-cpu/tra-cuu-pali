@@ -79,7 +79,7 @@ export const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             {/* Khối bên phải (Mã QR): ô vuông nhỏ bo góc rounded-lg, border border-amber-500 */}
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg border border-amber-500 p-1 flex items-center justify-center bg-stone-900 shrink-0 overflow-hidden shadow-sm">
+            <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-lg border border-amber-500 p-1 flex items-center justify-center bg-stone-900 shrink-0 overflow-hidden shadow-sm">
               {!qrError ? (
                 <img
                   src="/qr-zalo.jpg"
