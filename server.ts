@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { GoogleGenAI, Type } from '@google/genai';
-import { kv } from '@vercel/kv';
+import Redis from 'ioredis';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,6 +17,26 @@ app.use(express.json());
 
 const apiKey = process.env.GEMINI_API_KEY || '';
 
+// =========================================================================
+// CẤU HÌNH REDIS ĐỒNG BỘ VỚI REDIS_URL CỦA VERCEL (CHO APP PĀḶI)
+// =========================================================================
+const redisUrl = process.env.REDIS_URL || '';
+const isRedisEnabled = Boolean(redisUrl);
+
+let redis: Redis | null = null;
+if (isRedisEnabled) {
+  try {
+    redis = new Redis(redisUrl);
+    redis.on('error', (err) => console.error('Redis Client Error:', err));
+    console.log('Đã kết nối kho Redis thành công!');
+  } catch (err) {
+    console.error('Lỗi khởi tạo Redis:', err);
+    redis = null;
+  }
+} else {
+  console.log('Chưa cấu hình REDIS_URL, tạm thời tắt chức năng lưu trữ 0 đồng.');
+}
+
 const ai = new GoogleGenAI({
   apiKey,
   httpOptions: {
@@ -26,7 +46,7 @@ const ai = new GoogleGenAI({
   },
 });
 
-const candidateModels = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-3.8-flash'];
+const candidateModels = ['gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
 
 async function generateWithFallback(prompt: string, systemInstruction: string, responseSchema?: any) {
   const config: any = {
@@ -101,28 +121,30 @@ app.post('/api/pali-hub', async (req: Request, res: Response) => {
     const cleanInput = input.trim();
     
     // TIỀN TỐ KHO LƯU TRỮ CHO DỰ ÁN PALI
-    const cacheKey = `pali_${mode}_${cleanInput.toLowerCase()}`;
+    const cacheKey = \`pali_\${mode}_\${cleanInput.toLowerCase()}\`;
 
-    // LƯỚI LỌC 0 ĐỒNG: TÌM TRONG KHO VERCEL KV TRƯỚC
-    try {
-      const cachedData = await kv.get(cacheKey);
-      if (cachedData) {
-        console.log('⚡ Đã lấy từ kho lưu trữ 0 đồng:', cacheKey);
-        res.json({ mode, data: cachedData });
-        return; // Dừng lại, bốc dữ liệu ra ngay không tốn tiền gọi AI
+    // LƯỚI LỌC 0 ĐỒNG: ĐỌC DỮ LIỆU TỪ KHO
+    if (isRedisEnabled && redis) {
+      try {
+        const cachedDataStr = await redis.get(cacheKey);
+        if (cachedDataStr) {
+          console.log('⚡ Đã lấy từ kho lưu trữ 0 đồng:', cacheKey);
+          res.json({ mode, data: JSON.parse(cachedDataStr) });
+          return; // Dừng lại, bốc dữ liệu ra ngay không tốn tiền gọi AI
+        }
+      } catch (e) {
+        console.warn('Lỗi đọc kho (vẫn tiếp tục gọi AI):', e);
       }
-    } catch (e) {
-      console.warn('Lỗi đọc kho (vẫn tiếp tục gọi AI):', e);
     }
 
     let resultText = '';
 
     // TAB 1: Tra từ Pāḷi - Việt
     if (mode === 'pali-to-vi') {
-      const systemInstruction = `Bạn là chuyên gia ngôn ngữ cổ Pāḷi. Khi tôi nhập một từ Pāḷi bất kỳ, hãy phân tích cực kỳ gãy gọn và chính xác theo 4 ý sau: 1. Từ gốc & Từ loại (ngữ căn, từ gốc, loại từ). 2. Hình thái hiện tại (Cách mấy, Ngôi mấy, Thì gì, Số ít/nhiều). 3. Nghĩa trực tiếp (Dịch chuẩn xác nhất). 4. Bảng chia từ (Kẻ bảng Markdown liệt kê toàn bộ biến cách/ngôi). Không giải thích lan man.
+      const systemInstruction = \`Bạn là chuyên gia ngôn ngữ cổ Pāḷi. Khi tôi nhập một từ Pāḷi bất kỳ, hãy phân tích cực kỳ gãy gọn và chính xác theo 4 ý sau: 1. Từ gốc & Từ loại (ngữ căn, từ gốc, loại từ). 2. Hình thái hiện tại (Cách mấy, Ngôi mấy, Thì gì, Số ít/nhiều). 3. Nghĩa trực tiếp (Dịch chuẩn xác nhất). 4. Bảng chia từ (Kẻ bảng Markdown liệt kê toàn bộ biến cách/ngôi). Không giải thích lan man.
 QUY TẮC CỘT CÁCH/NGÔI:
 Cột 'Cách / Ngôi' (trong Markdown và trong tableData.rows) BẮT BUỘC ghi bằng TIẾNG VIỆT có số thứ tự:
-1. Chủ cách, 2. Đối cách, 3. Sử dụng cách, 4. Chỉ định cách, 5. Xuất xứ cách, 6. Sở thuộc cách, 7. Định vị cách, 8. Hô cách (hoặc 1. Ngôi 3, 2. Ngôi 2, 3. Ngôi 1 đối với động từ).`;
+1. Chủ cách, 2. Đối cách, 3. Sử dụng cách, 4. Chỉ định cách, 5. Xuất xứ cách, 6. Sở thuộc cách, 7. Định vị cách, 8. Hô cách (hoặc 1. Ngôi 3, 2. Ngôi 2, 3. Ngôi 1 đối với động từ).\`;
 
       const responseSchema = {
         type: Type.OBJECT,
@@ -158,15 +180,15 @@ Cột 'Cách / Ngôi' (trong Markdown và trong tableData.rows) BẮT BUỘC ghi
         required: ['analyzedWord', 'rootAndType', 'currentMorphology', 'directMeaning', 'markdownTable', 'tableData', 'formattedMarkdown'],
       };
 
-      resultText = await generateWithFallback(`Từ Pāḷi: "${cleanInput}"`, systemInstruction, responseSchema);
+      resultText = await generateWithFallback(\`Từ Pāḷi: "\${cleanInput}"\`, systemInstruction, responseSchema);
     }
 
     // TAB 2: Tra từ Việt - Pāḷi
     else if (mode === 'vi-to-pali') {
-      const systemInstruction = `Bạn là chuyên gia ngôn ngữ cổ Pāḷi. Tìm từ Pāḷi sát nghĩa tiếng Việt nhất và phân tích gãy gọn theo 3 ý: 1. Từ gốc & Từ loại. 2. Hình thái hiện tại (Cách, Ngôi, Thì, Số). 3. Bảng chia từ (Kẻ bảng Markdown toàn bộ biến cách/ngôi). Không giải thích lan man.
+      const systemInstruction = \`Bạn là chuyên gia ngôn ngữ cổ Pāḷi. Tìm từ Pāḷi sát nghĩa tiếng Việt nhất và phân tích gãy gọn theo 3 ý: 1. Từ gốc & Từ loại. 2. Hình thái hiện tại (Cách, Ngôi, Thì, Số). 3. Bảng chia từ (Kẻ bảng Markdown toàn bộ biến cách/ngôi). Không giải thích lan man.
 QUY TẮC CỘT CÁCH/NGÔI:
 Cột 'Cách / Ngôi' (trong Markdown và trong tableData.rows) BẮT BUỘC ghi bằng TIẾNG VIỆT có số thứ tự:
-1. Chủ cách, 2. Đối cách, 3. Sử dụng cách, 4. Chỉ định cách, 5. Xuất xứ cách, 6. Sở thuộc cách, 7. Định vị cách, 8. Hô cách (hoặc 1. Ngôi 3, 2. Ngôi 2, 3. Ngôi 1 đối với động từ).`;
+1. Chủ cách, 2. Đối cách, 3. Sử dụng cách, 4. Chỉ định cách, 5. Xuất xứ cách, 6. Sở thuộc cách, 7. Định vị cách, 8. Hô cách (hoặc 1. Ngôi 3, 2. Ngôi 2, 3. Ngôi 1 đối với động từ).\`;
 
       const responseSchema = {
         type: Type.OBJECT,
@@ -201,18 +223,18 @@ Cột 'Cách / Ngôi' (trong Markdown và trong tableData.rows) BẮT BUỘC ghi
         required: ['vietnameseWord', 'analyzedWord', 'rootAndType', 'currentMorphology', 'markdownTable', 'tableData', 'formattedMarkdown'],
       };
 
-      resultText = await generateWithFallback(`Từ tiếng Việt: "${cleanInput}"`, systemInstruction, responseSchema);
+      resultText = await generateWithFallback(\`Từ tiếng Việt: "\${cleanInput}"\`, systemInstruction, responseSchema);
     }
 
     // TAB 3: Dịch câu Pāḷi - Việt
     else if (mode === 'sentence-pali-to-vi') {
-      const systemInstruction = `Bạn là trợ lý phân tích cú pháp Pāḷi kinh điển. BẮT BUỘC kết quả phân tích từng từ trong câu phải có đầy đủ 3 lớp dữ liệu:
+      const systemInstruction = \`Bạn là trợ lý phân tích cú pháp Pāḷi kinh điển. BẮT BUỘC kết quả phân tích từng từ trong câu phải có đầy đủ 3 lớp dữ liệu:
 1. [Từ Pāḷi]: Từ Pāḷi trong câu (nguyên dạng đang phân tích).
 2. [Nghĩa tiếng Việt trực tiếp]: Dịch nghĩa tiếng Việt chuẩn xác và trực tiếp nhất của từ tại đúng hình thái ngữ pháp đó trong câu (ví dụ: "Đức Phật", "giáo pháp", "thuyết giảng", "đi đến", "các vị Tỳ-khưu"...).
 3. [Giải phẫu ngữ pháp chi tiết]:
    - Ký hiệu viết tắt cú pháp: ví dụ (m/a, c1, si), (m/a, c2, si), (v, pres, p3, si)...
    - Giải nghĩa chi tiết về giống, vĩ ngữ, cách, số, thì, ngôi.
-Cuối cùng xuất ra: "=> [Bản dịch tiếng Việt mượt mà]".`;
+Cuối cùng xuất ra: "=> [Bản dịch tiếng Việt mượt mà]".\`;
 
       const responseSchema = {
         type: Type.OBJECT,
@@ -237,12 +259,12 @@ Cuối cùng xuất ra: "=> [Bản dịch tiếng Việt mượt mà]".`;
         required: ['originalSentence', 'words', 'smoothTranslation', 'rawOutput'],
       };
 
-      resultText = await generateWithFallback(`Câu Pāḷi: "${cleanInput}"`, systemInstruction, responseSchema);
+      resultText = await generateWithFallback(\`Câu Pāḷi: "\${cleanInput}"\`, systemInstruction, responseSchema);
     }
 
     // TAB 4: Dịch câu Việt - Pāḷi
     else if (mode === 'sentence-vi-to-pali') {
-      const systemInstruction = `Bạn là học giả Pāḷi. Dịch câu sang tiếng Pāḷi (tuân thủ SOV). Trình bày 3 phần: 1. BẢN DỊCH PĀḶI. 2. GIẢI TRÌNH NGỮ PHÁP (Phân tích ngược câu vừa dịch bằng ký hiệu viết tắt). 3. LƯU Ý DỊCH THUẬT (Chỉ 1-2 câu nếu phức tạp).`;
+      const systemInstruction = \`Bạn là học giả Pāḷi. Dịch câu sang tiếng Pāḷi (tuân thủ SOV). Trình bày 3 phần: 1. BẢN DỊCH PĀḶI. 2. GIẢI TRÌNH NGỮ PHÁP (Phân tích ngược câu vừa dịch bằng ký hiệu viết tắt). 3. LƯU Ý DỊCH THUẬT (Chỉ 1-2 câu nếu phức tạp).\`;
 
       const responseSchema = {
         type: Type.OBJECT,
@@ -256,20 +278,23 @@ Cuối cùng xuất ra: "=> [Bản dịch tiếng Việt mượt mà]".`;
         required: ['originalSentence', 'paliTranslation', 'grammarBreakdown', 'rawOutput'],
       };
 
-      resultText = await generateWithFallback(`Câu tiếng Việt: "${cleanInput}"`, systemInstruction, responseSchema);
+      resultText = await generateWithFallback(\`Câu tiếng Việt: "\${cleanInput}"\`, systemInstruction, responseSchema);
     }
     
     else {
-      res.status(400).json({ error: `Chế độ không hợp lệ: ${mode}` });
+      res.status(400).json({ error: \`Chế độ không hợp lệ: \${mode}\` });
       return;
     }
 
-    // BƯỚC KHÓA ĐUÔI: CẤT KẾT QUẢ VÀO KHO RỒI MỚI TRẢ VỀ
     const finalData = JSON.parse(resultText);
-    try {
-      await kv.set(cacheKey, finalData); // Lưu vĩnh viễn vào Vercel KV
-    } catch (e) {
-      console.warn('Lỗi lưu kho:', e);
+
+    // LƯU KẾT QUẢ VÀO KHO
+    if (isRedisEnabled && redis) {
+      try {
+        await redis.set(cacheKey, JSON.stringify(finalData));
+      } catch (e) {
+        console.warn('Lỗi lưu kho:', e);
+      }
     }
     
     res.json({ mode, data: finalData });
@@ -288,7 +313,7 @@ app.post('/api/analyze-pali', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Thiếu từ cần tra.' });
       return;
     }
-    const response = await fetch(`http://localhost:${port}/api/pali-hub`, {
+    const response = await fetch(\`http://localhost:\${port}/api/pali-hub\`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode: 'pali-to-vi', input: word }),
@@ -324,5 +349,5 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 app.listen(port, () => {
-  console.log(`Server Pāḷi Nirutti Multi-Module running on port ${port}`);
+  console.log(\`Server Pāḷi Nirutti Multi-Module running on port \${port}\`);
 });
