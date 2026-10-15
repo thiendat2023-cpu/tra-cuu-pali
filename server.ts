@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { GoogleGenAI, Type } from '@google/genai';
+import { kv } from '@vercel/kv';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -98,6 +99,23 @@ app.post('/api/pali-hub', async (req: Request, res: Response) => {
     }
 
     const cleanInput = input.trim();
+    
+    // TIỀN TỐ KHO LƯU TRỮ CHO DỰ ÁN PALI
+    const cacheKey = `pali_${mode}_${cleanInput.toLowerCase()}`;
+
+    // LƯỚI LỌC 0 ĐỒNG: TÌM TRONG KHO VERCEL KV TRƯỚC
+    try {
+      const cachedData = await kv.get(cacheKey);
+      if (cachedData) {
+        console.log('⚡ Đã lấy từ kho lưu trữ 0 đồng:', cacheKey);
+        res.json({ mode, data: cachedData });
+        return; // Dừng lại, bốc dữ liệu ra ngay không tốn tiền gọi AI
+      }
+    } catch (e) {
+      console.warn('Lỗi đọc kho (vẫn tiếp tục gọi AI):', e);
+    }
+
+    let resultText = '';
 
     // TAB 1: Tra từ Pāḷi - Việt
     if (mode === 'pali-to-vi') {
@@ -140,13 +158,11 @@ Cột 'Cách / Ngôi' (trong Markdown và trong tableData.rows) BẮT BUỘC ghi
         required: ['analyzedWord', 'rootAndType', 'currentMorphology', 'directMeaning', 'markdownTable', 'tableData', 'formattedMarkdown'],
       };
 
-      const resultText = await generateWithFallback(`Từ Pāḷi: "${cleanInput}"`, systemInstruction, responseSchema);
-      res.json({ mode, data: JSON.parse(resultText) });
-      return;
+      resultText = await generateWithFallback(`Từ Pāḷi: "${cleanInput}"`, systemInstruction, responseSchema);
     }
 
     // TAB 2: Tra từ Việt - Pāḷi
-    if (mode === 'vi-to-pali') {
+    else if (mode === 'vi-to-pali') {
       const systemInstruction = `Bạn là chuyên gia ngôn ngữ cổ Pāḷi. Tìm từ Pāḷi sát nghĩa tiếng Việt nhất và phân tích gãy gọn theo 3 ý: 1. Từ gốc & Từ loại. 2. Hình thái hiện tại (Cách, Ngôi, Thì, Số). 3. Bảng chia từ (Kẻ bảng Markdown toàn bộ biến cách/ngôi). Không giải thích lan man.
 QUY TẮC CỘT CÁCH/NGÔI:
 Cột 'Cách / Ngôi' (trong Markdown và trong tableData.rows) BẮT BUỘC ghi bằng TIẾNG VIỆT có số thứ tự:
@@ -185,13 +201,11 @@ Cột 'Cách / Ngôi' (trong Markdown và trong tableData.rows) BẮT BUỘC ghi
         required: ['vietnameseWord', 'analyzedWord', 'rootAndType', 'currentMorphology', 'markdownTable', 'tableData', 'formattedMarkdown'],
       };
 
-      const resultText = await generateWithFallback(`Từ tiếng Việt: "${cleanInput}"`, systemInstruction, responseSchema);
-      res.json({ mode, data: JSON.parse(resultText) });
-      return;
+      resultText = await generateWithFallback(`Từ tiếng Việt: "${cleanInput}"`, systemInstruction, responseSchema);
     }
 
     // TAB 3: Dịch câu Pāḷi - Việt
-    if (mode === 'sentence-pali-to-vi') {
+    else if (mode === 'sentence-pali-to-vi') {
       const systemInstruction = `Bạn là trợ lý phân tích cú pháp Pāḷi kinh điển. BẮT BUỘC kết quả phân tích từng từ trong câu phải có đầy đủ 3 lớp dữ liệu:
 1. [Từ Pāḷi]: Từ Pāḷi trong câu (nguyên dạng đang phân tích).
 2. [Nghĩa tiếng Việt trực tiếp]: Dịch nghĩa tiếng Việt chuẩn xác và trực tiếp nhất của từ tại đúng hình thái ngữ pháp đó trong câu (ví dụ: "Đức Phật", "giáo pháp", "thuyết giảng", "đi đến", "các vị Tỳ-khưu"...).
@@ -223,13 +237,11 @@ Cuối cùng xuất ra: "=> [Bản dịch tiếng Việt mượt mà]".`;
         required: ['originalSentence', 'words', 'smoothTranslation', 'rawOutput'],
       };
 
-      const resultText = await generateWithFallback(`Câu Pāḷi: "${cleanInput}"`, systemInstruction, responseSchema);
-      res.json({ mode, data: JSON.parse(resultText) });
-      return;
+      resultText = await generateWithFallback(`Câu Pāḷi: "${cleanInput}"`, systemInstruction, responseSchema);
     }
 
     // TAB 4: Dịch câu Việt - Pāḷi
-    if (mode === 'sentence-vi-to-pali') {
+    else if (mode === 'sentence-vi-to-pali') {
       const systemInstruction = `Bạn là học giả Pāḷi. Dịch câu sang tiếng Pāḷi (tuân thủ SOV). Trình bày 3 phần: 1. BẢN DỊCH PĀḶI. 2. GIẢI TRÌNH NGỮ PHÁP (Phân tích ngược câu vừa dịch bằng ký hiệu viết tắt). 3. LƯU Ý DỊCH THUẬT (Chỉ 1-2 câu nếu phức tạp).`;
 
       const responseSchema = {
@@ -244,12 +256,24 @@ Cuối cùng xuất ra: "=> [Bản dịch tiếng Việt mượt mà]".`;
         required: ['originalSentence', 'paliTranslation', 'grammarBreakdown', 'rawOutput'],
       };
 
-      const resultText = await generateWithFallback(`Câu tiếng Việt: "${cleanInput}"`, systemInstruction, responseSchema);
-      res.json({ mode, data: JSON.parse(resultText) });
+      resultText = await generateWithFallback(`Câu tiếng Việt: "${cleanInput}"`, systemInstruction, responseSchema);
+    }
+    
+    else {
+      res.status(400).json({ error: `Chế độ không hợp lệ: ${mode}` });
       return;
     }
 
-    res.status(400).json({ error: `Chế độ không hợp lệ: ${mode}` });
+    // BƯỚC KHÓA ĐUÔI: CẤT KẾT QUẢ VÀO KHO RỒI MỚI TRẢ VỀ
+    const finalData = JSON.parse(resultText);
+    try {
+      await kv.set(cacheKey, finalData); // Lưu vĩnh viễn vào Vercel KV
+    } catch (e) {
+      console.warn('Lỗi lưu kho:', e);
+    }
+    
+    res.json({ mode, data: finalData });
+
   } catch (err: any) {
     console.error('Lỗi API pali-hub:', err);
     res.status(500).json({ error: 'Lỗi khi xử lý: ' + (err?.message || 'Lỗi nội bộ.') });
@@ -299,6 +323,6 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server Pāḷi Nirutti Multi-Module running on http://0.0.0.0:${port}`);
+app.listen(port, () => {
+  console.log(`Server Pāḷi Nirutti Multi-Module running on port ${port}`);
 });
