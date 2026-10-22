@@ -109,22 +109,19 @@ const wordTableSchema = {
   required: ['title', 'rows'],
 };
 
-
 // =========================================================================
 // API BỘ ĐẾM & TRENDING SEARCHES (TOP 5) DÙNG REDIS VERCEL KV
 // =========================================================================
 app.get('/api/stats', async (req: Request, res: Response) => {
   try {
     if (isRedisEnabled && redis) {
-      // 1. Đọc số views và searches
-      const viewsStr = await redis.get('global_page_views');
-      const searchesStr = await redis.get('global_search_count');
+      // 1. Tăng trực tiếp lượt truy cập và lấy ngay con số mới nhất
+      const currentViews = await redis.incr('global_page_views');
       
-      // 2. Tăng views ngầm (fire and forget)
-      redis.incr('global_page_views').catch(e => console.warn('Lỗi tăng views:', e));
+      // 2. Đọc tổng số từ đã tra trên toàn hệ thống
+      const searchesStr = await redis.get('global_search_count');
 
       // 3. Đọc Top 5 Trending Searches từ Sorted Set
-      // ZREVRANGE: lấy phần tử có điểm số từ cao xuống thấp (từ vị trí 0 đến 4 = top 5)
       let trending: string[] = [];
       try {
         trending = await redis.zrevrange('trending_searches', 0, 4);
@@ -133,7 +130,7 @@ app.get('/api/stats', async (req: Request, res: Response) => {
       }
 
       res.json({ 
-        views: viewsStr ? parseInt(viewsStr, 10) : 0, 
+        views: currentViews || 0, 
         searches: searchesStr ? parseInt(searchesStr, 10) : 0,
         trending: trending
       });
@@ -166,6 +163,14 @@ app.post('/api/pali-hub', async (req: Request, res: Response) => {
         const cachedDataStr = await redis.get(cacheKey);
         if (cachedDataStr) {
           console.log('⚡ Đã lấy từ kho lưu trữ 0 đồng:', cacheKey);
+
+          // --- CẬP NHẬT BỘ ĐẾM & TRENDING NGAY CẢ KHI LẤY TỪ KHO CACHE ---
+          await redis.incr('global_search_count');
+          if (cleanInput.length <= 30) {
+            await redis.zincrby('trending_searches', 1, cleanInput.toLowerCase());
+          }
+          // ---------------------------------------------------------------
+
           res.json({ mode, data: JSON.parse(cachedDataStr) });
           return; // Dừng lại, bốc dữ liệu ra ngay
         }
@@ -325,21 +330,17 @@ Cuối cùng xuất ra: "=> [Bản dịch tiếng Việt mượt mà]".`;
 
     const finalData = JSON.parse(resultText);
 
-    // LƯU KẾT QUẢ VÀO KHO
+    // LƯU KẾT QUẢ MỚI VÀO KHO & CẬP NHẬT BỘ ĐẾM
     if (isRedisEnabled && redis) {
       try {
         await redis.set(cacheKey, JSON.stringify(finalData));
         
-        // --- THÊM LOGIC CẬP NHẬT BỘ ĐẾM & TRENDING ---
-        // 1. Tăng tổng số từ đã tra
+        // --- CẬP NHẬT BỘ ĐẾM & TRENDING KHI TẠO KẾT QUẢ MỚI ---
         await redis.incr('global_search_count');
-        
-        // 2. Chấm điểm cho từ khóa vào bảng xếp hạng Top Trending
-        // Chỉ lấy những từ tra không quá dài (để tránh spam)
         if (cleanInput.length <= 30) {
-           await redis.zincrby('trending_searches', 1, cleanInput.toLowerCase());
+          await redis.zincrby('trending_searches', 1, cleanInput.toLowerCase());
         }
-        // --------------------------------------------
+        // ------------------------------------------------------
 
       } catch (e) {
         console.warn('Lỗi lưu kho:', e);
