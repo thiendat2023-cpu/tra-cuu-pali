@@ -519,3 +519,117 @@ export default function App() {
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1 text-xs sm:text-sm">
               <h4 className="font-semibold text-red-300">Không thể hoàn tất yêu cầu</h4>
+              <p className="mt-1 text-red-300/80 leading-relaxed">{error}</p>
+              <button
+                onClick={() => handleSubmit()}
+                className="mt-2.5 px-3 py-1 rounded bg-red-900/60 hover:bg-red-800/80 text-red-100 text-xs font-medium transition-colors"
+              >
+                Thử lại
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* RESULT RENDERERS BASED ON ACTIVE TAB */}
+        {!loading && (
+          <>
+            {activeTab === 'pali-to-vi' && paliToViResult && (
+              <AnalysisResult
+                data={paliToViResult}
+                mode="pali-to-vi"
+                isBookmarked={isCurrentBookmarked}
+                onToggleBookmark={toggleBookmarkCurrent}
+              />
+            )}
+
+            {activeTab === 'vi-to-pali' && viToPaliResult && (
+              <AnalysisResult
+                data={viToPaliResult}
+                mode="vi-to-pali"
+                isBookmarked={isCurrentBookmarked}
+                onToggleBookmark={toggleBookmarkCurrent}
+              />
+            )}
+
+            {activeTab === 'sentence-pali-to-vi' && sentencePaliToViResult && (
+              <SentencePaliToViResultView
+                data={sentencePaliToViResult}
+                isBookmarked={isCurrentBookmarked}
+                onToggleBookmark={toggleBookmarkCurrent}
+              />
+            )}
+
+            {activeTab === 'sentence-vi-to-pali' && sentenceViToPaliResult && (
+              <SentenceViToPaliResultView
+                data={sentenceViToPaliResult}
+                isBookmarked={isCurrentBookmarked}
+                onToggleBookmark={toggleBookmarkCurrent}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-stone-800/60 pt-5 pb-6 bg-[#0f1117] text-center mt-auto w-full">
+        <div className="max-w-7xl mx-auto px-4 space-y-1.5">
+          {/* Dòng 1: Màu xám sáng nhẹ, thanh thoát */}
+          <p className="text-xs sm:text-sm text-stone-400 font-sans tracking-wide">
+            Dự án đang cần kinh phí để nâng cấp và duy trì dung lượng tra cứu (token).
+          </p>
+
+          {/* Dòng 2: Lời kêu gọi kèm nút bấm liên kết nổi bật */}
+          <p className="text-xs sm:text-sm text-stone-300 font-sans flex items-center justify-center gap-1.5 flex-wrap">
+            <span>Tuỳ hỷ ủng hộ bấm vào đây --&gt;</span>
+            <button
+              onClick={() => setIsSupportModalOpen(true)}
+              className="text-amber-400 font-bold font-pali hover:underline hover:text-amber-300 cursor-pointer transition-all inline-flex items-center gap-1 focus:outline-none"
+              title="Mở mã QR ngân hàng ủng hộ tác giả"
+            >
+              <span>Thầy Đạt cute ^v^</span>
+            </button>
+          </p>
+          {/* ĐOẠN CODE BỔ SUNG: KHỐI BỘ ĐẾM */}
+          <div className="flex justify-center mt-4">
+            <div className="flex items-center gap-3 px-4 py-1.5 bg-[#1e1e1e] rounded-full border border-stone-800 text-xs text-stone-300 shadow-sm">
+              <span className="flex items-center gap-1">
+                <span className="text-amber-500">👁️</span> Lượt truy cập: <strong className="text-amber-400 font-pali tracking-wide">{pageViews}</strong>
+              </span>
+              <span className="text-stone-700">|</span>
+              <span className="flex items-center gap-1">
+                <span className="text-amber-500">📝</span> Từ đã tra: <strong className="text-amber-400 font-pali tracking-wide">{searchCount}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Support Modal (QR Ngân Hàng - id="support-modal") */}
+      <SupportModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+      />
+
+      {/* Info Modal (Hình Của Thầy & Zalo - id="info-modal") */}
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+      />
+
+      {/* History Drawer */}
+      <HistoryDrawer
+        isOpen={isHistoryDrawerOpen}
+        onClose={() => setIsHistoryDrawerOpen(false)}
+        items={history}
+        onSelectItem={handleSelectHistoryItem}
+        onRemoveItem={(id) => saveHistory(history.filter((h) => h.id !== id))}
+        onClearAll={() => {
+          if (window.confirm('Xóa toàn bộ lịch sử?')) saveHistory([]);
+        }}
+        onToggleBookmark={(id) =>
+          saveHistory(history.map((h) => (h.id === id ? { ...h, bookmarked: !h.bookmarked } : h)))
+        }
+      />
+    </div>
+  );
+}
