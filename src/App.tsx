@@ -114,6 +114,11 @@ export default function App() {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Thêm state cho bộ đếm & trending searches từ Vercel KV
+  const [pageViews, setPageViews] = useState<number | string>('...');
+  const [searchCount, setSearchCount] = useState<number | string>('...');
+  const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
 
   // Results state for each tab
   const [paliToViResult, setPaliToViResult] = useState<PaliWordAnalysisResult | null>(null);
@@ -127,6 +132,22 @@ export default function App() {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+
+  // Load thông số bộ đếm & trending searches từ API
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setPageViews(data.views || 0);
+          setSearchCount(data.searches || 0);
+          if (data.trending && Array.isArray(data.trending)) {
+            setTrendingSearches(data.trending);
+          }
+        }
+      })
+      .catch(err => console.error("Lỗi tải thông số API:", err));
+  }, []);
 
   // Load history on mount (giới hạn 10 mục)
   useEffect(() => {
@@ -223,6 +244,9 @@ export default function App() {
       ].slice(0, MAX_HISTORY_ITEMS); // Cơ chế FIFO: Tối đa 10 mục, mục thứ 11 sẽ tự động bị loại bỏ khỏi danh sách
 
       saveHistory(nextHistory);
+      
+      // Tăng biến đếm số từ đã tra trên giao diện
+      setSearchCount(prev => (typeof prev === 'number' ? prev + 1 : prev));
     } catch (err: any) {
       console.error('Lỗi khi gọi API:', err);
       setError(err?.message || 'Không thể thực hiện yêu cầu. Vui lòng thử lại.');
@@ -447,17 +471,18 @@ export default function App() {
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span className="text-stone-400 font-medium flex items-center gap-1">
                     <Flame className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Gợi ý mẫu:</span>
+                    <span>Top 5 tra nhiều nhất:</span>
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {PRESETS[activeTab].map((preset, idx) => (
+                    {/* THAY ĐỔI: Dùng Trending Searches thay cho Gợi ý tĩnh */
+                    (trendingSearches.length > 0 ? trendingSearches : PRESETS[activeTab].map(p => p.text).slice(0,5)).map((keyword, idx) => (
                       <button
                         key={idx}
-                        onClick={() => handleSubmit(preset.text)}
+                        onClick={() => handleSubmit(keyword)}
                         disabled={loading}
                         className="px-2.5 py-1 rounded-md bg-stone-900/90 hover:bg-amber-600/20 hover:text-amber-200 text-stone-300 border border-stone-800 hover:border-amber-500/40 font-pali text-xs transition-colors"
                       >
-                        {preset.label}
+                        {keyword}
                       </button>
                     ))}
                   </div>
@@ -494,105 +519,3 @@ export default function App() {
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
             <div className="flex-1 text-xs sm:text-sm">
               <h4 className="font-semibold text-red-300">Không thể hoàn tất yêu cầu</h4>
-              <p className="mt-1 text-red-300/80 leading-relaxed">{error}</p>
-              <button
-                onClick={() => handleSubmit()}
-                className="mt-2.5 px-3 py-1 rounded bg-red-900/60 hover:bg-red-800/80 text-red-100 text-xs font-medium transition-colors"
-              >
-                Thử lại
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* RESULT RENDERERS BASED ON ACTIVE TAB */}
-        {!loading && (
-          <>
-            {activeTab === 'pali-to-vi' && paliToViResult && (
-              <AnalysisResult
-                data={paliToViResult}
-                mode="pali-to-vi"
-                isBookmarked={isCurrentBookmarked}
-                onToggleBookmark={toggleBookmarkCurrent}
-              />
-            )}
-
-            {activeTab === 'vi-to-pali' && viToPaliResult && (
-              <AnalysisResult
-                data={viToPaliResult}
-                mode="vi-to-pali"
-                isBookmarked={isCurrentBookmarked}
-                onToggleBookmark={toggleBookmarkCurrent}
-              />
-            )}
-
-            {activeTab === 'sentence-pali-to-vi' && sentencePaliToViResult && (
-              <SentencePaliToViResultView
-                data={sentencePaliToViResult}
-                isBookmarked={isCurrentBookmarked}
-                onToggleBookmark={toggleBookmarkCurrent}
-              />
-            )}
-
-            {activeTab === 'sentence-vi-to-pali' && sentenceViToPaliResult && (
-              <SentenceViToPaliResultView
-                data={sentenceViToPaliResult}
-                isBookmarked={isCurrentBookmarked}
-                onToggleBookmark={toggleBookmarkCurrent}
-              />
-            )}
-          </>
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-stone-800/60 pt-5 pb-6 bg-[#0f1117] text-center mt-auto w-full">
-        <div className="max-w-7xl mx-auto px-4 space-y-1.5">
-          {/* Dòng 1: Màu xám sáng nhẹ, thanh thoát */}
-          <p className="text-xs sm:text-sm text-stone-400 font-sans tracking-wide">
-            Dự án đang cần kinh phí để nâng cấp và duy trì dung lượng tra cứu (token).
-          </p>
-
-          {/* Dòng 2: Lời kêu gọi kèm nút bấm liên kết nổi bật */}
-          <p className="text-xs sm:text-sm text-stone-300 font-sans flex items-center justify-center gap-1.5 flex-wrap">
-            <span>Tuỳ hỷ ủng hộ bấm vào đây --&gt;</span>
-            <button
-              onClick={() => setIsSupportModalOpen(true)}
-              className="text-amber-400 font-bold font-pali hover:underline hover:text-amber-300 cursor-pointer transition-all inline-flex items-center gap-1 focus:outline-none"
-              title="Mở mã QR ngân hàng ủng hộ tác giả"
-            >
-              <span>Thầy Đạt cute ^v^</span>
-            </button>
-          </p>
-        </div>
-      </footer>
-
-      {/* Support Modal (QR Ngân Hàng - id="support-modal") */}
-      <SupportModal
-        isOpen={isSupportModalOpen}
-        onClose={() => setIsSupportModalOpen(false)}
-      />
-
-      {/* Info Modal (Hình Của Thầy & Zalo - id="info-modal") */}
-      <InfoModal
-        isOpen={isInfoModalOpen}
-        onClose={() => setIsInfoModalOpen(false)}
-      />
-
-      {/* History Drawer */}
-      <HistoryDrawer
-        isOpen={isHistoryDrawerOpen}
-        onClose={() => setIsHistoryDrawerOpen(false)}
-        items={history}
-        onSelectItem={handleSelectHistoryItem}
-        onRemoveItem={(id) => saveHistory(history.filter((h) => h.id !== id))}
-        onClearAll={() => {
-          if (window.confirm('Xóa toàn bộ lịch sử?')) saveHistory([]);
-        }}
-        onToggleBookmark={(id) =>
-          saveHistory(history.map((h) => (h.id === id ? { ...h, bookmarked: !h.bookmarked } : h)))
-        }
-      />
-    </div>
-  );
-}
