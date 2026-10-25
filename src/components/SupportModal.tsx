@@ -43,13 +43,17 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
 
         {/* Modal Content */}
         <div className="p-4 sm:p-5 space-y-4 overflow-y-auto">
-          <div className="text-center space-y-1">
-            <h4 className="font-pali text-lg sm:text-xl font-bold text-amber-200">
-              Thầy Đạt cute ^v^
+          <div className="text-center space-y-2">
+            <h4 className="font-pali text-base sm:text-lg font-bold text-amber-200">
+              Gieo Duyên Pháp Thí – Phụng Sự Cộng Đồng
             </h4>
-            <p className="text-xs text-stone-400 leading-relaxed font-sans">
-              Dự án TRA CỨU PALI được phát triển với tâm nguyện phụng sự việc học tập và nghiên cứu ngữ pháp Pāḷi Phật giáo Theravāda.
+            <p className="text-xs text-stone-300 leading-relaxed font-sans">
+              Mỗi sự đóng góp quý báu của bạn là <strong className="text-amber-300">hạt mầm Bố thí Pháp trực tiếp</strong>, giúp duy trì máy chủ và phát triển hệ sinh thái miễn phí:
             </p>
+            <div className="bg-stone-900/80 p-2.5 rounded-lg border border-amber-500/20 text-left space-y-1 text-[11px] sm:text-xs font-sans text-stone-300">
+              <p>• <strong className="text-emerald-400">Đã hoàn thành:</strong> Từ điển Pāḷi • Anh văn Phật pháp</p>
+              <p>• <strong className="text-amber-400">Đang xây dựng:</strong> Bách khoa Phật giáo • Dinh dưỡng Thuần chay</p>
+            </div>
           </div>
 
           {/* Khu vực Ủng hộ (Donation) */}
@@ -71,9 +75,9 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
               </div>
             </div>
 
-            {/* Dòng chữ nhỏ (text-sm), màu xám nhẹ, căn giữa */}
-            <p className="text-sm text-stone-400 text-center leading-normal">
-              Tuỳ hỷ ủng hộ tác giả duy trì dự án
+            {/* Dòng chữ nhỏ dưới mã QR */}
+            <p className="text-xs text-stone-400 text-center italic leading-normal">
+              "Pháp thí thắng mọi thí" — Tri ân bạn đã đồng hành lan tỏa tri thức.
             </p>
           </div>
         </div>
