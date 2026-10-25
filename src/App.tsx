@@ -20,6 +20,10 @@ import {
   Flame,
   Heart,
   Info,
+  LayoutGrid,
+  ExternalLink,
+  CheckCircle2,
+  Clock,
 } from 'lucide-react';
 import {
   ActiveTab,
@@ -40,6 +44,49 @@ import { InfoModal } from './components/InfoModal.tsx';
 
 const STORAGE_KEY = 'pali_nirutti_history_v2';
 const MAX_HISTORY_ITEMS = 10;
+
+// ĐƯỜNG LINK CÁC DỰ ÁN TRONG HỆ SINH THÁI (Thầy có thể chỉnh lại link số 2 nếu khác)
+const PALI_DICT_URL = 'https://tra-cuu-pali.vercel.app';
+const ENGLISH_DICT_URL = 'https://tra-cuu-anh-van-phat-phap.vercel.app';
+
+const ECOSYSTEM_PROJECTS = [
+  {
+    id: 1,
+    title: '1. Tra Từ điển Pāḷi',
+    description: 'Hệ thống phân tích ngữ pháp, dịch câu & tra cứu từ điển Pāḷi - Việt chuẩn Theravāda.',
+    status: 'completed' as const,
+    statusLabel: 'Đã hoàn thành',
+    url: PALI_DICT_URL,
+    current: true,
+  },
+  {
+    id: 2,
+    title: '2. Tra từ điển Anh văn Phật Pháp',
+    description: 'Công cụ tra cứu thuật ngữ, dịch thuật và đọc hiểu văn bản Phật học tiếng Anh chuyên sâu.',
+    status: 'completed' as const,
+    statusLabel: 'Đã hoàn thành',
+    url: ENGLISH_DICT_URL,
+    current: false,
+  },
+  {
+    id: 3,
+    title: '3. Bách khoa toàn thư Phật giáo',
+    description: 'Hệ thống tri thức lịch sử, kinh điển, giáo lý và nhân vật Phật giáo chuẩn học thuật.',
+    status: 'building' as const,
+    statusLabel: 'Đang xây dựng',
+    url: '',
+    current: false,
+  },
+  {
+    id: 4,
+    title: '4. Dinh dưỡng thuần chay',
+    description: 'Cẩm nang khoa học dinh dưỡng thực vật và thiết kế thực đơn thuần chay cân bằng.',
+    status: 'building' as const,
+    statusLabel: 'Đang xây dựng',
+    url: '',
+    current: false,
+  },
+];
 
 const TAB_CONFIGS: {
   id: ActiveTab;
@@ -128,6 +175,7 @@ export default function App() {
 
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
+  const [isEcosystemModalOpen, setIsEcosystemModalOpen] = useState(false);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
@@ -320,6 +368,16 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Nút [Hệ Sinh Thái] */}
+            <button
+              onClick={() => setIsEcosystemModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-amber-200 border border-stone-800 text-xs sm:text-sm font-medium transition-colors"
+              title="Danh sách các dự án trong Hệ Sinh Thái"
+            >
+              <LayoutGrid className="w-3.5 h-3.5 text-amber-400" />
+              <span>Hệ Sinh Thái</span>
+            </button>
+
             {/* Nút [Ủng hộ] */}
             <button
               onClick={() => setIsSupportModalOpen(true)}
@@ -570,12 +628,10 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-stone-800/60 pt-5 pb-6 bg-[#0f1117] text-center mt-auto w-full">
         <div className="max-w-7xl mx-auto px-4 space-y-1.5">
-          {/* Dòng 1: Thông điệp duy trì hệ sinh thái */}
           <p className="text-xs sm:text-sm text-stone-400 font-sans tracking-wide">
             Mỗi sự đóng góp của bạn là hạt mầm Bố thí Pháp trực tiếp, giúp duy trì máy chủ và phát triển hệ sinh thái miễn phí.
           </p>
 
-          {/* Dòng 2: Lời kêu gọi kèm nút bấm mở Modal QR */}
           <p className="text-xs sm:text-sm text-stone-300 font-sans flex items-center justify-center gap-1.5 flex-wrap">
             <span>Tuỳ hỷ phát tâm hộ trì tại đây --&gt;</span>
             <button
@@ -601,6 +657,111 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Ecosystem Modal (Danh sách 4 dự án liên quan) */}
+      {isEcosystemModalOpen && (
+        <div
+          id="ecosystem-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in"
+          onClick={() => setIsEcosystemModalOpen(false)}
+        >
+          <div
+            className="bg-[#15171f] border border-amber-900/40 rounded-2xl w-[92%] md:w-[460px] max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-3.5 sm:p-4 border-b border-stone-800 bg-stone-900/70 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4 text-amber-400" />
+                <h3 className="font-semibold text-stone-100 text-sm sm:text-base tracking-wide">
+                  Hệ Sinh Thái Tri Thức & Phụng Sự
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsEcosystemModalOpen(false)}
+                className="p-1 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition-colors"
+                title="Đóng"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-4 sm:p-5 space-y-3 overflow-y-auto">
+              <p className="text-xs text-stone-400 leading-relaxed text-center">
+                Các ứng dụng web miễn phí hỗ trợ học tập Phật pháp và đời sống tỉnh thức:
+              </p>
+
+              <div className="space-y-2.5">
+                {ECOSYSTEM_PROJECTS.map((proj) => {
+                  const isCompleted = proj.status === 'completed';
+                  return isCompleted && proj.url ? (
+                    <a
+                      key={proj.id}
+                      href={proj.url}
+                      target={proj.current ? '_self' : '_blank'}
+                      rel="noopener noreferrer"
+                      className="block p-3.5 rounded-xl bg-stone-900/90 hover:bg-stone-800/90 border border-amber-500/30 hover:border-amber-400/60 transition-all group"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="font-semibold text-amber-200 group-hover:text-amber-100 text-sm flex items-center gap-1.5">
+                          <span>{proj.title}</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-amber-400 shrink-0 opacity-80 group-hover:opacity-100" />
+                        </h4>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-700/40 shrink-0">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          {proj.statusLabel}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-xs text-stone-400 leading-relaxed">
+                        {proj.description}
+                      </p>
+                    </a>
+                  ) : (
+                    <div
+                      key={proj.id}
+                      className="p-3.5 rounded-xl bg-stone-900/40 border border-stone-800/80 opacity-85"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="font-semibold text-stone-300 text-sm">
+                          {proj.title}
+                        </h4>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/60 text-amber-300 border border-amber-700/40 shrink-0">
+                          <Clock className="w-3 h-3 text-amber-400" />
+                          {proj.statusLabel}
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-xs text-stone-500 leading-relaxed">
+                        {proj.description}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 bg-stone-900/60 border-t border-stone-800 flex items-center justify-between gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  setIsEcosystemModalOpen(false);
+                  setIsSupportModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-xs font-medium transition-colors"
+              >
+                <Heart className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
+                <span>Ủng hộ Hệ sinh thái</span>
+              </button>
+              <button
+                onClick={() => setIsEcosystemModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-medium transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Support Modal (QR Ngân Hàng - id="support-modal") */}
       <SupportModal
