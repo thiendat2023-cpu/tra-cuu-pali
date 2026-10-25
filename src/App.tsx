@@ -45,9 +45,9 @@ import { InfoModal } from './components/InfoModal.tsx';
 const STORAGE_KEY = 'pali_nirutti_history_v2';
 const MAX_HISTORY_ITEMS = 10;
 
-// ĐƯỜNG LINK CÁC DỰ ÁN TRONG HỆ SINH THÁI (Thầy có thể chỉnh lại link số 2 nếu khác)
-const PALI_DICT_URL = 'https://tra-cuu-pali.vercel.app';
-const ENGLISH_DICT_URL = 'dharma-dict.vercel.app';
+// ĐƯỜNG LINK CÁC DỰ ÁN TRONG HỆ SINH THÁI (Bắt buộc có https:// ở đầu)
+const PALI_DICT_URL = 'https://tra-cuu-pali.vercel.app/';
+const ENGLISH_DICT_URL = 'https://dharma-dict.vercel.app/';
 
 const ECOSYSTEM_PROJECTS = [
   {
@@ -70,7 +70,7 @@ const ECOSYSTEM_PROJECTS = [
   },
   {
     id: 3,
-    title: '3. Bách khoa toàn thư Phật giáo',
+    title: '3. Bách khoa toàn thư Phật giáo (đang xây dựng)',
     description: 'Hệ thống tri thức lịch sử, kinh điển, giáo lý và nhân vật Phật giáo chuẩn học thuật.',
     status: 'building' as const,
     statusLabel: 'Đang xây dựng',
@@ -79,7 +79,7 @@ const ECOSYSTEM_PROJECTS = [
   },
   {
     id: 4,
-    title: '4. Dinh dưỡng thuần chay',
+    title: '4. Dinh dưỡng thuần chay (đang xây dựng)',
     description: 'Cẩm nang khoa học dinh dưỡng thực vật và thiết kế thực đơn thuần chay cân bằng.',
     status: 'building' as const,
     statusLabel: 'Đang xây dựng',
@@ -715,6 +715,9 @@ export default function App() {
                       </div>
                       <p className="mt-1.5 text-xs text-stone-400 leading-relaxed">
                         {proj.description}
+                      </p>
+                      <p className="mt-1 text-[11px] text-amber-400/90 group-hover:underline font-mono">
+                        🔗 {proj.url}
                       </p>
                     </a>
                   ) : (
