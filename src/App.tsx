@@ -47,7 +47,7 @@ const MAX_HISTORY_ITEMS = 10;
 
 // ĐƯỜNG LINK CÁC DỰ ÁN TRONG HỆ SINH THÁI (Thầy có thể chỉnh lại link số 2 nếu khác)
 const PALI_DICT_URL = 'https://tra-cuu-pali.vercel.app';
-const ENGLISH_DICT_URL = 'https://tra-cuu-anh-van-phat-phap.vercel.app';
+const ENGLISH_DICT_URL = 'dharma-dict.vercel.app';
 
 const ECOSYSTEM_PROJECTS = [
   {
