@@ -241,7 +241,7 @@ export default function App() {
       const nextHistory = [
         newItem,
         ...history.filter((h) => !(h.query.toLowerCase() === query.toLowerCase() && h.mode === mode)),
-      ].slice(0, MAX_HISTORY_ITEMS); // Cơ chế FIFO: Tối đa 10 mục, mục thứ 11 sẽ tự động bị loại bỏ khỏi danh sách
+      ].slice(0, MAX_HISTORY_ITEMS);
 
       saveHistory(nextHistory);
       
@@ -356,7 +356,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* 1. THANH NAVIGATION / TABS: Cuộn ngang trên mobile, dàn trải trên tablet/desktop */}
+        {/* 1. THANH NAVIGATION / TABS */}
         <div className="border-t border-stone-800/60 bg-[#0e1017]">
           <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 overflow-x-auto whitespace-nowrap py-2 scrollbar-none">
             <nav className="flex items-center gap-1.5 sm:gap-2 min-w-max md:min-w-0 md:flex-wrap lg:justify-center" aria-label="Tabs">
@@ -381,13 +381,11 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content Area: Padding p-4 trên mobile, p-6 trên tablet, p-8 trên desktop */}
+      {/* Main Content Area */}
       <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 relative z-10">
-        {/* TAB 5: SỔ TAY NGỮ PHÁP (KHÔNG CẦN Ô NHẬP LIỆU) */}
         {activeTab === 'grammar-handbook' ? (
           <GrammarHandbookView />
         ) : (
-          /* TAB 1, 2, 3, 4: CÓ Ô NHẬP LIỆU TÙY BIẾN THEO TAB */
           <section className="bg-[#14161f]/80 border border-amber-900/30 rounded-2xl p-4 sm:p-6 shadow-xl backdrop-blur-sm space-y-4">
             <form
               onSubmit={(e) => {
@@ -474,8 +472,7 @@ export default function App() {
                     <span>Top 5 tra nhiều nhất:</span>
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {/* THAY ĐỔI: Dùng Trending Searches thay cho Gợi ý tĩnh */
-                    (trendingSearches.length > 0 ? trendingSearches : PRESETS[activeTab].map(p => p.text).slice(0,5)).map((keyword, idx) => (
+                    {(trendingSearches.length > 0 ? trendingSearches : PRESETS[activeTab].map(p => p.text).slice(0,5)).map((keyword, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleSubmit(keyword)}
@@ -573,23 +570,24 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-stone-800/60 pt-5 pb-6 bg-[#0f1117] text-center mt-auto w-full">
         <div className="max-w-7xl mx-auto px-4 space-y-1.5">
-          {/* Dòng 1: Màu xám sáng nhẹ, thanh thoát */}
+          {/* Dòng 1: Thông điệp duy trì hệ sinh thái */}
           <p className="text-xs sm:text-sm text-stone-400 font-sans tracking-wide">
-            Dự án đang cần kinh phí để nâng cấp và duy trì dung lượng tra cứu (token).
+            Mỗi sự đóng góp của bạn là hạt mầm Bố thí Pháp trực tiếp, giúp duy trì máy chủ và phát triển hệ sinh thái miễn phí.
           </p>
 
-          {/* Dòng 2: Lời kêu gọi kèm nút bấm liên kết nổi bật */}
+          {/* Dòng 2: Lời kêu gọi kèm nút bấm mở Modal QR */}
           <p className="text-xs sm:text-sm text-stone-300 font-sans flex items-center justify-center gap-1.5 flex-wrap">
-            <span>Tuỳ hỷ ủng hộ bấm vào đây --&gt;</span>
+            <span>Tuỳ hỷ phát tâm hộ trì tại đây --&gt;</span>
             <button
               onClick={() => setIsSupportModalOpen(true)}
               className="text-amber-400 font-bold font-pali hover:underline hover:text-amber-300 cursor-pointer transition-all inline-flex items-center gap-1 focus:outline-none"
-              title="Mở mã QR ngân hàng ủng hộ tác giả"
+              title="Mở mã QR ngân hàng ủng hộ dự án"
             >
-              <span>Thầy Đạt cute ^v^</span>
+              <span>Gieo Duyên Pháp Thí – Phụng Sự Cộng Đồng</span>
             </button>
           </p>
-          {/* ĐOẠN CODE BỔ SUNG: KHỐI BỘ ĐẾM */}
+
+          {/* KHỐI BỘ ĐẾM */}
           <div className="flex justify-center mt-4">
             <div className="flex items-center gap-3 px-4 py-1.5 bg-[#1e1e1e] rounded-full border border-stone-800 text-xs text-stone-300 shadow-sm">
               <span className="flex items-center gap-1">
