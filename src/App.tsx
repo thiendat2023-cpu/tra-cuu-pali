@@ -161,8 +161,8 @@ export default function App() {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Thêm state cho bộ đếm & trending searches từ Vercel KV
+
+  // State cho bộ đếm & trending searches từ Vercel KV
   const [pageViews, setPageViews] = useState<number | string>('...');
   const [searchCount, setSearchCount] = useState<number | string>('...');
   const [trendingSearches, setTrendingSearches] = useState<string[]>([]);
@@ -184,8 +184,8 @@ export default function App() {
   // Load thông số bộ đếm & trending searches từ API
   useEffect(() => {
     fetch('/api/stats')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data) {
           setPageViews(data.views || 0);
           setSearchCount(data.searches || 0);
@@ -194,7 +194,7 @@ export default function App() {
           }
         }
       })
-      .catch(err => console.error("Lỗi tải thông số API:", err));
+      .catch((err) => console.error('Lỗi tải thông số API:', err));
   }, []);
 
   // Load history on mount (giới hạn 10 mục)
@@ -292,9 +292,9 @@ export default function App() {
       ].slice(0, MAX_HISTORY_ITEMS);
 
       saveHistory(nextHistory);
-      
+
       // Tăng biến đếm số từ đã tra trên giao diện
-      setSearchCount(prev => (typeof prev === 'number' ? prev + 1 : prev));
+      setSearchCount((prev) => (typeof prev === 'number' ? prev + 1 : prev));
     } catch (err: any) {
       console.error('Lỗi khi gọi API:', err);
       setError(err?.message || 'Không thể thực hiện yêu cầu. Vui lòng thử lại.');
@@ -355,7 +355,7 @@ export default function App() {
 
       {/* Main Header */}
       <header className="border-b border-stone-800/80 bg-[#12141c]/95 sticky top-0 z-30 backdrop-blur-md">
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-700/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner shrink-0">
               <span className="font-pali text-xl sm:text-2xl font-bold leading-none select-none">ဓ</span>
@@ -367,7 +367,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {/* Nút [Hệ Sinh Thái] */}
             <button
               onClick={() => setIsEcosystemModalOpen(true)}
@@ -411,6 +411,22 @@ export default function App() {
                 </span>
               )}
             </button>
+
+            {/* Bộ đếm Lượt truy cập & Lượt tra từ ở góc phải Header (đồng bộ App Bách Khoa Phật Giáo) */}
+            <div className="flex flex-col items-end justify-center text-[11px] sm:text-xs leading-tight pl-2.5 sm:pl-3.5 ml-0.5 sm:ml-1 border-l border-stone-800 text-stone-400 select-none">
+              <div className="flex items-center gap-1.5">
+                <span>👁️ Lượt truy cập:</span>
+                <strong className="font-pali font-bold text-[#DFBD69] tracking-wide tabular-nums">
+                  {typeof pageViews === 'number' ? pageViews.toLocaleString('vi-VN') : pageViews}
+                </strong>
+              </div>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span>📖 Lượt tra từ:</span>
+                <strong className="font-pali font-bold text-[#DFBD69] tracking-wide tabular-nums">
+                  {typeof searchCount === 'number' ? searchCount.toLocaleString('vi-VN') : searchCount}
+                </strong>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -440,7 +456,7 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 relative z-10">
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pb-20 sm:pb-24 space-y-6 sm:space-y-8 relative z-10">
         {activeTab === 'grammar-handbook' ? (
           <GrammarHandbookView />
         ) : (
@@ -530,7 +546,7 @@ export default function App() {
                     <span>Top 5 tra nhiều nhất:</span>
                   </span>
                   <div className="flex flex-wrap gap-1.5">
-                    {(trendingSearches.length > 0 ? trendingSearches : PRESETS[activeTab].map(p => p.text).slice(0,5)).map((keyword, idx) => (
+                    {(trendingSearches.length > 0 ? trendingSearches : PRESETS[activeTab].map((p) => p.text).slice(0, 5)).map((keyword, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleSubmit(keyword)}
@@ -625,38 +641,20 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-stone-800/60 pt-5 pb-6 bg-[#0f1117] text-center mt-auto w-full">
-        <div className="max-w-7xl mx-auto px-4 space-y-1.5">
-          <p className="text-xs sm:text-sm text-stone-400 font-sans tracking-wide">
-            Mỗi sự đóng góp của bạn là hạt mầm Bố thí Pháp trực tiếp, giúp duy trì máy chủ và phát triển hệ sinh thái miễn phí.
-          </p>
-
-          <p className="text-xs sm:text-sm text-stone-300 font-sans flex items-center justify-center gap-1.5 flex-wrap">
-            <span>Tuỳ hỷ phát tâm hộ trì tại đây --&gt;</span>
-            <button
-              onClick={() => setIsSupportModalOpen(true)}
-              className="text-amber-400 font-bold font-pali hover:underline hover:text-amber-300 cursor-pointer transition-all inline-flex items-center gap-1 focus:outline-none"
-              title="Mở mã QR ngân hàng ủng hộ dự án"
-            >
-              <span>Gieo Duyên Pháp Thí – Phụng Sự Cộng Đồng</span>
-            </button>
-          </p>
-
-          {/* KHỐI BỘ ĐẾM */}
-          <div className="flex justify-center mt-4">
-            <div className="flex items-center gap-3 px-4 py-1.5 bg-[#1e1e1e] rounded-full border border-stone-800 text-xs text-stone-300 shadow-sm">
-              <span className="flex items-center gap-1">
-                <span className="text-amber-500">👁️</span> Lượt truy cập: <strong className="text-amber-400 font-pali tracking-wide">{pageViews}</strong>
-              </span>
-              <span className="text-stone-700">|</span>
-              <span className="flex items-center gap-1">
-                <span className="text-amber-500">📝</span> Từ đã tra: <strong className="text-amber-400 font-pali tracking-wide">{searchCount}</strong>
-              </span>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Thanh Popup mờ cố định ở đáy màn hình (đồng bộ với App Bách Khoa Phật Giáo) */}
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-30 w-[94%] max-w-2xl px-4 sm:px-6 py-2 rounded-full bg-[#12141c]/75 backdrop-blur-md border border-stone-800/80 shadow-[0_4px_24px_rgba(0,0,0,0.65)] text-center text-[11px] sm:text-xs text-stone-400/90 hover:bg-[#12141c]/95 hover:border-amber-500/30 hover:text-stone-200 transition-all duration-300">
+        <span>
+          Mỗi đóng góp của bạn giúp duy trì máy chủ và phát triển hệ sinh thái Phật học miễn phí --&gt;{' '}
+        </span>
+        <button
+          type="button"
+          onClick={() => setIsSupportModalOpen(true)}
+          className="font-semibold text-[#DFBD69] hover:text-amber-300 underline underline-offset-4 decoration-[#DFBD69]/60 hover:decoration-amber-300 transition-colors cursor-pointer focus:outline-none"
+          title="Mở mã QR ngân hàng ủng hộ dự án"
+        >
+          Ủng hộ dự án
+        </button>
+      </div>
 
       {/* Ecosystem Modal (Danh sách 4 dự án liên quan) */}
       {isEcosystemModalOpen && (
